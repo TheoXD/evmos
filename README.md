@@ -57,14 +57,97 @@ The quick start is to follow this [section](#from-github-package-registry)
 
 # Local build
 
+## Prepare tfhe-rs C API
+
+### Build
+
+To build automatically the C library one can use the following commands:
+
+```bash
+make build_c_api_tfhe
+```
+
+This will clone **tfhe-rs** repository in work_dir folder and build the C api in __work_dir/tfhe-rs/target/release__. 
+
+If the developer hash its own **tfhe-rs** repository the TFHE_RS_PATH env variable could be set in .env file. 
+
+### Copy tfhe header file and C library
+
+**Go-ethereum** needs the tfhe.h header file located in __go-ethereum/core/vm__ and the libtfhe.so (linux) or libtfhe.dylib for (Mac) in __go-ethereum/core/vm/lib__.
+
+
+## Use custom go-ethereum and ethermint repositories
+
+To use custom **go-ethereum** and **ethermint** repositories, please update the go.mod file accordingly:
+
+```bash
+-replace github.com/ethereum/go-ethereum v1.10.19 => github.com/zama-ai/go-ethereum v0.1.10
++replace github.com/ethereum/go-ethereum v1.10.19 => ../go-ethereum
+ 
+-replace github.com/evmos/ethermint v0.19.3 => github.com/zama-ai/ethermint v0.1.2
++replace github.com/evmos/ethermint v0.19.3 => ../ethermint
+```
+
 To build evmosd binary directly in your system. 
 
 ```bash
-export GOPRIVATE=github.com/zama-ai/*
-make build-local
+make build
 ```
 
-The binary is built in build folder.
+The binary is installed in your system go binary path (e.g. $HOME/go/bin)
+
+IMPORTANT NOTES:
+
+<details>
+  <summary>Check if evmosd is linked with the right tfhe-rs C libray - Linux</summary>
+<br />
+
+```bash
+ldd $HOME/go/bin/evmosd
+	linux-vdso.so.1 (0x00007ffdb6d73000)
+	libtfhe.so => /PATH_TO/tfhe-rs/target/release/libtfhe.so (0x00007fa87c3a7000)
+	libc.so.6 => /lib64/libc.so.6 (0x00007fa87c185000)
+	libgcc_s.so.1 => /lib64/libgcc_s.so.1 (0x00007fa87c165000)
+	libm.so.6 => /lib64/libm.so.6 (0x00007fa87c087000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007fa87c9e5000)
+```
+
+If the user get:
+```bash
+evmosd: error while loading shared libraries: libtfhe.so: cannot open shared object file: No such file or directory
+```
+
+For linux one solution is to update the LD_LIBRARY_PATH to the libtfhe.so compiled in tfhe-rs
+
+</details>
+<details>
+  <summary>Generate FHE keys</summary>
+<br />
+
+```bash
+./scripts/prepare_volumes_from_fhe_tool_docker.sh v0.2.0
+```
+
+Copy them to evmos HOME folder in __.evmosd/zama/keys/network-fhe-keys__
+
+</details>
+<details>
+  <summary>Run a node</summary>
+<br />
+
+```bash
+./setup.sh
+./start.sh
+```
+
+If you want to reset the state:
+```bash
+rm -r $HOME/.evmosd/config
+rm -r $HOME/.evmosd/keyring-test/
+rm -r $HOME/.evmosd/data/
+```
+</details>
+<br />
 
 Dependencies:
 
